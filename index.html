@@ -1,0 +1,100 @@
+<html>
+  <head>
+    <style>
+      .box {
+        width: 50%;
+        height: 150px;
+        background-color: red;
+        margin: 0 auto;
+      }
+      .box--green {
+        background-color: green;
+      }
+    </style>
+    <script type="text/javascript">
+      function init() {
+        if (!window.customElements) {
+          console.log("[Web Components]: Disabled");
+          return;
+        }
+        console.log("[Web Components]: Enabled");
+
+        class LazyLoad extends HTMLElement {
+          constructor() {
+            super();
+          }
+          connectedCallback() {
+            // Validate 'src' attribute is set
+            if (!this.getAttribute("src")) {
+              console.error("Missing 'src' attribute on <lazy-load-img>");
+              return;
+            }
+
+            // Setup IntersectionObserver
+            this.setupIntersectionObserver();
+            this.observer.observe(this);
+          }
+          disconnectedCallback() {
+            this.observer.disconnect();
+          }
+          setupIntersectionObserver() {
+            const offset = this.dataset.offset || "200px";
+            console.log(offset);
+            const options = {
+              rootMargin: `0px 0px ${offset} 0px`,
+            };
+            const callback = (entries, observer) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  const img = document.createElement("img");
+                  this.copyAttributes(img);
+                  this.replaceWith(img);
+                }
+              });
+            };
+            this.observer = new IntersectionObserver(callback, options);
+          }
+          copyAttributes(target) {
+            [...this.attributes].forEach((attr) => {
+              target.setAttribute(attr.nodeName, attr.nodeValue);
+            });
+          }
+        }
+        customElements.define("lazy-load-img", LazyLoad);
+
+        document.addEventListener("DOMContentLoaded", () => {
+          const boxes = document.querySelectorAll(".box");
+          const options = {
+            rootMargin: "0px 0px 200px 0px",
+          };
+          const callback = (entries, observer) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("box--green");
+              } else {
+                entry.target.className = "box";
+              }
+            });
+          };
+          const observer = new IntersectionObserver(callback, options);
+          boxes.forEach((box) => observer.observe(box));
+        });
+      }
+      init();
+    </script>
+  </head>
+  <body>
+    <h1>Lazy Load</h1>
+
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+    <div class="box"></div>
+    <lazy-load-img
+      src="https://images.dog.ceo/breeds/finnish-lapphund/mochilamvan.jpg"
+      data-offset="300px"
+    />
+  </body>
+</html>
